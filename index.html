@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NN LABS Collection Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+/* Layout: one working column. Header, upload strip, filter bar, KPI cards, CBC panel, center summary table, charts, detail ledger. */
+:root{
+  --bg:#F2F7F8; --surface:#FFFFFF; --surface-2:#F6FAFB; --fg:#12262B; --muted:#5A7077; --line:#DAE6E9;
+  --accent:#0E7C86; --accent-ink:#FFFFFF; --accent-soft:#DDF1F2;
+  --blue:#2A5DB0; --blue-soft:#E3ECFA;
+  --good:#12805C; --good-soft:#DDF3EA; --warn:#B85A0B; --warn-soft:#FBEBDA; --bad:#B3261E; --bad-soft:#FBE4E2;
+  --c1:#0E7C86; --c2:#2A5DB0; --c3:#D9822B; --c4:#7C8E94;
+  --shadow:0 1px 2px rgba(18,38,43,.05),0 4px 14px rgba(18,38,43,.05);
+  --font:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1518; --surface:#121F23; --surface-2:#0F1A1D; --fg:#E5F0F2; --muted:#93AAB0; --line:#213237;
+  --accent:#3CC0CB; --accent-ink:#06282B; --accent-soft:#12383C;
+  --blue:#80A8F2; --blue-soft:#17274A;
+  --good:#4FD0A0; --good-soft:#12362A; --warn:#F0A25C; --warn-soft:#3A2713; --bad:#FF8F86; --bad-soft:#3F1B18;
+  --c1:#3CC0CB; --c2:#80A8F2; --c3:#F0A25C; --c4:#8CA0A6;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1518; --surface:#121F23; --surface-2:#0F1A1D; --fg:#E5F0F2; --muted:#93AAB0; --line:#213237;
+  --accent:#3CC0CB; --accent-ink:#06282B; --accent-soft:#12383C;
+  --blue:#80A8F2; --blue-soft:#17274A;
+  --good:#4FD0A0; --good-soft:#12362A; --warn:#F0A25C; --warn-soft:#3A2713; --bad:#FF8F86; --bad-soft:#3F1B18;
+  --c1:#3CC0CB; --c2:#80A8F2; --c3:#F0A25C; --c4:#8CA0A6;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.45;padding-inline:16px;padding-block:0 40px}
+.wrap{max-width:1440px;margin-inline:auto;display:flex;flex-direction:column;gap:18px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* header */
+header.top{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;justify-content:space-between;padding-block:20px 4px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.logo{width:46px;height:46px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.logo svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.brand h1{margin:0;font-size:12px;letter-spacing:.2em;font-weight:800;color:var(--accent)}
+.brand h2{margin:0;font-size:clamp(20px,3.2vw,28px);font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.menu{position:relative}
+.menu-list{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:170px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+.menu-list button{background:none;border:0;text-align:left;padding:9px 12px;border-radius:7px;cursor:pointer;font-weight:600}
+.menu-list button:hover{background:var(--accent-soft)}
+
+/* upload */
+.upload{background:var(--surface);border:1.5px dashed var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between;position:relative}
+.upload.drag{border-color:var(--accent);background:var(--accent-soft)}
+.upload.empty{padding:44px 20px;flex-direction:column;text-align:center;justify-content:center}
+.upload h3{margin:0;font-size:18px}
+.upload p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.upload .cols{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.upload.empty .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.file-chip{display:flex;align-items:center;gap:10px;min-width:0}
+.file-chip b{overflow-wrap:anywhere}
+.file-meta{color:var(--muted);font-size:13px}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--warn-soft);color:var(--warn)}
+.loading{position:absolute;inset:0;background:color-mix(in srgb,var(--surface) 88%,transparent);border-radius:inherit;display:grid;place-items:center;z-index:5}
+.loading div{display:flex;align-items:center;gap:12px;font-weight:600}
+.spin{width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
+.msg{border-radius:12px;padding:11px 14px;display:flex;gap:10px;align-items:flex-start;font-weight:500}
+.msg.ok{background:var(--good-soft);color:var(--good)}
+.msg.err{background:var(--bad-soft);color:var(--bad)}
+.msg.info{background:var(--blue-soft);color:var(--blue)}
+.msg .x{margin-left:auto;background:none;border:0;cursor:pointer;font-size:18px;line-height:1;color:inherit}
+.msg div{min-width:0;overflow-wrap:anywhere}
+
+/* filters */
+.filters{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end;box-shadow:var(--shadow)}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-width:0}
+.field input:disabled{opacity:.55}
+.filters .tail{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (min-width:760px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.kpi .l{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.kpi .l svg{color:var(--accent)}
+.kpi .v{font-size:clamp(20px,2.4vw,26px);font-weight:800;letter-spacing:-.01em;overflow-wrap:anywhere}
+.kpi.due .v{color:var(--warn)} .kpi.due .l svg{color:var(--warn)}
+.kpi.paid .l svg{color:var(--good)}
+.kpi.cbc .l svg{color:var(--blue)}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);min-width:0}
+.panel>.ph{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;justify-content:space-between;padding:16px 18px 6px}
+.panel>.ph h3{margin:0;font-size:16px;font-weight:800}
+.panel>.ph span{color:var(--muted);font-size:13px}
+.cbcp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(220px,1.1fr);gap:14px;padding:12px 18px 18px;align-items:center}
+.big{border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.big.c{background:var(--blue-soft);color:var(--blue)}
+.big.n{background:var(--accent-soft);color:var(--accent)}
+.big .l{font-size:12px;font-weight:800;letter-spacing:.12em}
+.big .v{font-size:clamp(40px,6vw,60px);font-weight:800;line-height:1;letter-spacing:-.02em}
+.big .s{font-size:13px;opacity:.85;font-weight:600}
+.chk-eq{grid-column:1/-1;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill-ok{background:var(--good-soft);color:var(--good);border-radius:99px;padding:2px 9px;font-weight:700;font-size:12px}
+.pill-bad{background:var(--bad-soft);color:var(--bad);border-radius:99px;padding:2px 9px;font-weight:700;font-size:12px}
+.cbcp .ch{height:170px;position:relative;min-width:0}
+@media (max-width:760px){.cbcp{grid-template-columns:1fr 1fr}.cbcp .ch{grid-column:1/-1}}
+
+/* tables */
+.scroll{overflow:auto;max-width:100%}
+.scroll.tall{max-height:70vh}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:9px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line)}
+th.r,td.r{text-align:right}
+th.sort{cursor:pointer;user-select:none}
+th.sort:hover{color:var(--accent)}
+th.sort .ar{display:inline-block;width:10px;opacity:.9}
+td.tests{white-space:normal;min-width:240px;max-width:340px}
+td.pat{min-width:160px}
+td.pat small{display:block;color:var(--muted);font-family:var(--mono);font-size:11px}
+tbody tr:hover td{background:var(--surface-2)}
+tr.clickable{cursor:pointer}
+tr.sel td{background:var(--accent-soft)}
+td.zero{color:var(--muted);opacity:.6}
+tfoot td,tfoot th{position:sticky;bottom:0;background:var(--accent-soft);font-weight:800;color:var(--fg);border-top:2px solid var(--accent);border-bottom:0;z-index:2;font-size:13px;text-transform:none;letter-spacing:0}
+.ind{display:inline-grid;place-items:center;min-width:26px;height:22px;border-radius:6px;font-weight:700;font-family:var(--mono);font-size:12px}
+.ind.on.c{background:var(--blue-soft);color:var(--blue)}
+.ind.on.n{background:var(--accent-soft);color:var(--accent)}
+.ind.off{color:var(--muted);opacity:.55}
+.empty-state{padding:36px 16px;text-align:center;color:var(--muted)}
+.more{display:flex;justify-content:center;padding:12px}
+.foot{padding:10px 18px 14px;color:var(--muted);font-size:12px}
+
+/* charts */
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:14px}
+.chart{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.chart h4{margin:0;font-size:14px;font-weight:800}
+.chart .cv{position:relative;min-width:0}
+.chart .none{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
+canvas{max-width:100%}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-bldg" viewBox="0 0 24 24"><path d="M4 21V9l8-5 8 5v12M9 21v-6h6v6M8 11h.01M16 11h.01"/></symbol>
+  <symbol id="i-bill" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L5 19a1 1 0 0 0 .9 1.5h12.2A1 1 0 0 0 19 19l-5-10V3M8 15h8"/></symbol>
+  <symbol id="i-rs" viewBox="0 0 24 24"><path d="M7 5h10M7 9h10M7 5c6 0 6 8 0 8h-.5l6.5 7"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+  <symbol id="i-dropx" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11zM9 12l6 6M15 12l-6 6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L5 19a1 1 0 0 0 .9 1.5h12.2A1 1 0 0 0 19 19l-5-10V3M8 15h8"/></svg></div>
+      <div>
+        <h1>NN LABS</h1>
+        <h2>Collection Center Wise Dashboard</h2>
+      </div>
+    </div>
+    <div class="actions" id="topActions" hidden>
+      <button class="btn primary" id="btnUpload2" type="button"><svg class="i"><use href="#i-upload"/></svg>Upload Excel</button>
+      <div class="menu" id="mFull">
+        <button class="btn" type="button" data-menu aria-haspopup="true" aria-expanded="false"><svg class="i"><use href="#i-down"/></svg>Export filtered report</button>
+      </div>
+      <div class="menu" id="mSum">
+        <button class="btn" type="button" data-menu aria-haspopup="true" aria-expanded="false"><svg class="i"><use href="#i-down"/></svg>Export Collection Center Wise Summary</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="msgBox" aria-live="polite"></div>
+
+  <section class="upload empty" id="upload">
+    <div class="loading" id="loading" hidden><div><span class="spin"></span><span id="loadingText">Reading Excel file…</span></div></div>
+    <div id="uploadEmpty">
+      <h3>Upload the Billing Wise Excel file</h3>
+      <p>Drop the file here or choose it. The dashboard finds the columns by name, so the column order does not matter. Every figure is calculated from your file.</p>
+      <p class="cols">Bill Date · Patient Info · Tests/Packages · Referral Doctor · Amount · Discount · Paid · Due · Net Amount · Cash · UPI · Card · Wallet · Other · Collection Center</p>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary" id="btnUpload" type="button"><svg class="i"><use href="#i-upload"/></svg>Choose Excel file</button>
+        <button class="btn" id="btnSample" type="button">Try with sample data</button>
+      </div>
+    </div>
+    <div id="uploadLoaded" class="file-chip" hidden>
+      <svg class="i" style="width:26px;height:26px;color:var(--accent)"><use href="#i-file"/></svg>
+      <div style="min-width:0"><b id="fileName"></b> <span class="badge" id="sampleBadge" hidden>SAMPLE DATA</span><div class="file-meta" id="fileMeta"></div></div>
+    </div>
+    <label class="chk" id="dupWrap" hidden><input type="checkbox" id="dupIgnore"><span id="dupText"></span></label>
+    <input type="file" id="file" accept=".xlsx,.xls,.xlsm,.csv" class="sr" tabindex="-1">
+  </section>
+
+  <main id="app" hidden style="display:flex;flex-direction:column;gap:18px">
+    <section class="filters" aria-label="Filters">
+      <div class="field"><label for="fFrom">From date</label><input type="date" id="fFrom"></div>
+      <div class="field"><label for="fTo">To date</label><input type="date" id="fTo"></div>
+      <div class="field"><label for="fCenter">Collection center</label><select id="fCenter"></select></div>
+      <div class="field"><label for="fName">Patient name</label><input type="search" id="fName" placeholder="Search name" autocomplete="off"></div>
+      <div class="field"><label for="fPid">Patient ID / UHID</label><input type="search" id="fPid" placeholder="Search ID" autocomplete="off"></div>
+      <div class="field"><label for="fCbc">CBC / NON CBC</label><select id="fCbc"><option value="">All bills</option><option value="1">CBC (Yes)</option><option value="0">NON CBC</option></select></div>
+      <div class="tail"><button class="btn ghost" id="btnReset" type="button">Reset filters</button></div>
+    </section>
+
+    <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+    <section class="panel" aria-label="CBC and NON CBC">
+      <div class="ph"><h3>CBC vs NON CBC</h3><span>One count per bill. A bill with CBC plus other tests counts once, as CBC.</span></div>
+      <div class="cbcp">
+        <div class="big c"><span class="l">TOTAL CBC</span><span class="v num" id="bigC">0</span><span class="s" id="bigCs"></span></div>
+        <div class="big n"><span class="l">TOTAL NON CBC</span><span class="v num" id="bigN">0</span><span class="s" id="bigNs"></span></div>
+        <div class="ch"><canvas id="chDonut" aria-label="CBC versus NON CBC chart" role="img"></canvas></div>
+        <div class="chk-eq" id="eq"></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Collection center wise summary">
+      <div class="ph"><h3>Collection Center Wise Summary</h3><span>Select a row to filter by that center. Revenue is the bill amount before discount.</span></div>
+      <div class="scroll"><table id="tSum"></table></div>
+    </section>
+
+    <section class="charts" id="charts" aria-label="Charts">
+      <div class="panel chart"><h4>Collection center vs revenue</h4><div class="cv" id="w1"><canvas id="ch1"></canvas></div></div>
+      <div class="panel chart"><h4>Collection center vs bills</h4><div class="cv" id="w2"><canvas id="ch2"></canvas></div></div>
+      <div class="panel chart"><h4>Paid vs due</h4><div class="cv" id="w3" style="height:220px"><canvas id="ch3"></canvas></div></div>
+      <div class="panel chart"><h4>CBC count by collection center</h4><div class="cv" id="w4"><canvas id="ch4"></canvas></div></div>
+      <div class="panel chart"><h4>NON CBC count by collection center</h4><div class="cv" id="w5"><canvas id="ch5"></canvas></div></div>
+    </section>
+
+    <section class="panel" aria-label="Detailed patient data">
+      <div class="ph"><h3>Detailed Patient Data</h3><span id="detInfo"></span></div>
+      <div class="scroll tall"><table id="tDet"></table></div>
+      <div class="more" id="more" hidden><button class="btn" id="btnMore" type="button">Show more rows</button></div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const int=n=>Math.round(n).toLocaleString('en-IN');
+const plain=n=>Math.round(n).toLocaleString('en-IN');
+
+/* ---------- column detection ---------- */
+const LABEL={date:'Bill Date',patient:'Patient Info',pid:'Patient ID / UHID',tests:'Tests/Packages',doctor:'Referral Doctor',amount:'Amount',discount:'Discount',paid:'Paid',due:'Due',net:'Net Amount',cash:'Cash',upi:'UPI',card:'Card',wallet:'Wallet',other:'Other',center:'Collection Center'};
+const ALIASES={
+  date:['billdate','date','billdt','invoicedate','billingdate'],
+  patient:['patientinfo','patientname','patient','name'],
+  pid:['patientid','uhid','patientiduhid','patientuhid','uid','regno','registrationno','mrn'],
+  tests:['testspackages','testpackages','tests','packages','testname','testnames','test','package'],
+  doctor:['referraldoctor','referraldoctorname','doctor','referredby','refdoctor','refby'],
+  amount:['amount','grossamount','billamount','totalamount'],
+  discount:['discount','disc','discountamount'],
+  paid:['paid','paidamount','received','amountpaid'],
+  due:['due','dueamount','balance','pending','balanceamount'],
+  net:['netamount','net','netpayable','netbill'],
+  cash:['cash'],upi:['upi'],card:['card'],wallet:['wallet'],other:['other','others'],
+  center:['collectioncenter','collectioncentre','center','centre','branch','collectionpoint','collectionlocation']
+};
+const REQUIRED=['date','patient','tests','amount','center'];
+const norm=s=>String(s??'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function mapHeader(row){
+  const map={};
+  row.forEach((h,i)=>{const n=norm(h);if(!n)return;
+    for(const f in ALIASES){if(map[f]===undefined&&ALIASES[f].includes(n)){map[f]=i;break;}}});
+  return map;
+}
+
+/* ---------- value helpers ---------- */
+const num=v=>{if(typeof v==='number')return isFinite(v)?v:0;
+  if(v==null)return 0;const x=parseFloat(String(v).replace(/[₹,\s]|rs\.?/gi,''));return isFinite(x)?x:0;};
+const clean=v=>String(v??'').replace(/\s+/g,' ').trim();
+const p2=n=>String(n).padStart(2,'0');
+function toISO(v){
+  if(v==null||v==='')return '';
+  if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+p2(v.getMonth()+1)+'-'+p2(v.getDate());
+  if(typeof v==='number'&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*864e5));return d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1)+'-'+p2(d.getUTCDate());}
+  const s=String(v).trim();let m;
+  if((m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)))return m[1]+'-'+p2(m[2])+'-'+p2(m[3]);
+  if((m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/))){let y=m[3];if(y.length===2)y='20'+y;
+    const d=+m[1],mo=+m[2];if(mo<1||mo>12||d<1||d>31)return '';return y+'-'+p2(mo)+'-'+p2(d);}
+  return '';
+}
+const showDate=iso=>iso?iso.slice(8)+'-'+iso.slice(5,7)+'-'+iso.slice(0,4):'—';
+
+/* ---------- CBC and test count ---------- */
+const CBC_RE=/\bcbc\b|complete\s+blood\s+(cell\s+)?count/i;
+const isCBC=t=>CBC_RE.test(t||'');
+const SHORT=new Set(['CBC','MP','WIDAL','ESR','HB','PS','TLC','DLC','CRP','RBS','FBS','PPBS','LFT','KFT','RFT','TFT','VDRL','HIV','HBSAG','UA','HCV','PT','INR']);
+const FRAGMENTS=new Set(['direct','indirect','total']);   // parts of one panel, e.g. "Bilirubin- Total, Direct, Indirect"
+function splitTop(s){const out=[];let d=0,cur='';
+  for(const ch of s){if(ch==='(')d++;else if(ch===')')d=Math.max(0,d-1);
+    if((ch===','||ch===';'||ch==='\n'||ch==='|')&&d===0){out.push(cur);cur='';}else cur+=ch;}
+  out.push(cur);return out;}
+function countTests(s){
+  s=clean(s);if(!s)return 0;
+  let n=0;
+  for(let part of splitTop(s)){
+    part=part.trim();if(!part)continue;
+    if(FRAGMENTS.has(part.toLowerCase()))continue;
+    part=part.replace(/PS\.?\s*FOR\s*MALARI?YA\s*PARASITE/gi,'MP');
+    const toks=part.replace(/\./g,' ').split(/\s+/).filter(Boolean);
+    if(toks.length>=2&&toks.every(t=>SHORT.has(t.toUpperCase())))n+=toks.length;else n+=1;
+  }
+  return Math.max(n,1);
+}
+
+/* ---------- state ---------- */
+const S={rows:[],file:'',sample:false,dupCount:0,dupIgnore:false,hasPid:false,
+  f:{from:'',to:'',center:'',name:'',pid:'',cbc:''},sort:{key:'date',dir:-1},shown:200};
+
+/* ---------- parsing ---------- */
+function parseSheetRows(aoa){
+  let hi=-1,map=null;
+  for(let r=0;r<Math.min(aoa.length,20);r++){const m=mapHeader(aoa[r]||[]);
+    if(Object.keys(m).length>=4&&(m.date!==undefined||m.patient!==undefined||m.amount!==undefined)){hi=r;map=m;break;}}
+  if(hi<0)return {error:'Could not find a header row. Make sure the first rows contain column names such as Bill Date, Patient Info, Tests/Packages, Amount and Collection Center.'};
+  const missing=REQUIRED.filter(f=>map[f]===undefined);
+  if(missing.length){
+    const found=Object.keys(map).map(f=>LABEL[f]).join(', ');
+    return {error:'Missing required column'+(missing.length>1?'s':'')+': '+missing.map(f=>LABEL[f]).join(', ')+'. Columns found: '+found+'.'};
+  }
+  const rows=[];let skipped=0,blankCenter=0,blankTests=0;const seen=new Map();let dups=0;
+  for(let r=hi+1;r<aoa.length;r++){
+    const a=aoa[r]||[];
+    if(!a.some(v=>clean(v)!==''))continue;
+    const g=f=>map[f]===undefined?'':a[map[f]];
+    const dateRaw=g('date');
+    if(/^\s*(grand\s+)?total/i.test(String(dateRaw))||/^\s*(grand\s+)?total/i.test(String(g('patient')))){skipped++;continue;}
+    const patient=clean(g('patient')),tests=clean(g('tests'));
+    const pid=clean(g('pid'));
+    if(!patient&&!tests&&!pid){skipped++;continue;}
+    const o={idx:rows.length,date:toISO(dateRaw),patient,pid,tests,doctor:clean(g('doctor')),
+      amount:num(g('amount')),discount:num(g('discount')),cash:num(g('cash')),upi:num(g('upi')),card:num(g('card')),wallet:num(g('wallet')),other:num(g('other'))};
+    const paySum=o.cash+o.upi+o.card+o.wallet+o.other;
+    o.net=map.net!==undefined&&clean(g('net'))!==''?num(g('net')):o.amount-o.discount;
+    o.paid=map.paid!==undefined&&clean(g('paid'))!==''?num(g('paid')):paySum;
+    o.due=map.due!==undefined&&clean(g('due'))!==''?num(g('due')):Math.max(o.net-o.paid,0);
+    o.center=clean(g('center'));if(!o.center){o.center='Unassigned';blankCenter++;}
+    if(!tests)blankTests++;
+    o.testsN=countTests(tests);
+    o.cbc=isCBC(tests)?1:0;o.non=o.cbc?0:1;
+    const key=[o.date,o.patient,o.pid,o.tests,o.doctor,o.amount,o.discount,o.paid,o.due,o.net,o.cash,o.upi,o.card,o.wallet,o.other,o.center].join('|').toLowerCase();
+    o.isDup=seen.has(key);if(o.isDup)dups++;seen.set(key,1);
+    rows.push(o);
+  }
+  // unify center spelling (case / spacing) so "Main Branch" and "MAIN BRANCH " group together
+  const canon=new Map();
+  rows.forEach(o=>{const k=o.center.toUpperCase();if(!canon.has(k))canon.set(k,o.center);o.center=canon.get(k);});
+  return {rows,skipped,blankCenter,blankTests,dups,hasPid:map.pid!==undefined};
+}
+function readWorkbook(buf){
+  const wb=XLSX.read(buf,{type:'array'});
+  let lastErr='The file has no readable sheets.';
+  for(const name of wb.SheetNames){
+    const aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:''});
+    const res=parseSheetRows(aoa);
+    if(res.error){lastErr=res.error;continue;}
+    if(!res.rows.length){lastErr='The sheet has headers but no billing rows.';continue;}
+    return res;
+  }
+  return {error:lastErr};
+}
+
+/* ---------- messages / loading ---------- */
+function say(kind,text){
+  const box=$('msgBox');
+  box.innerHTML='<div class="msg '+kind+'" role="'+(kind==='err'?'alert':'status')+'"><div>'+esc(text)+'</div><button class="x" type="button" aria-label="Dismiss">×</button></div>';
+  box.querySelector('.x').onclick=()=>{box.innerHTML='';};
+}
+const busy=(on,t)=>{$('loading').hidden=!on;if(t)$('loadingText').textContent=t;};
+
+function loadFile(file){
+  if(!file)return;
+  busy(true,'Reading '+file.name+'…');
+  const fr=new FileReader();
+  fr.onerror=()=>{busy(false);say('err','The file could not be read. Check that it is not open in another program and try again.');};
+  fr.onload=()=>setTimeout(()=>{
+    try{
+      const res=readWorkbook(fr.result);
+      if(res.error){busy(false);say('err',res.error);return;}
+      S.rows=res.rows;S.file=file.name;S.sample=false;S.dupCount=res.dups;S.hasPid=res.hasPid;
+      afterLoad(res,file.name);
+    }catch(e){busy(false);say('err','This file could not be processed. Upload an .xlsx, .xls or .csv billing export. ('+(e&&e.message?e.message:'unknown error')+')');}
+  },30);
+  fr.readAsArrayBuffer(file);
+}
+function afterLoad(res,name){
+  resetFilters(true);
+  S.dupIgnore=false;$('dupIgnore').checked=false;
+  fillCenters();
+  $('upload').classList.remove('empty');
+  $('uploadEmpty').hidden=true;$('uploadLoaded').hidden=false;$('topActions').hidden=false;$('app').hidden=false;
+  $('fileName').textContent=name;$('sampleBadge').hidden=!S.sample;
+  const bits=[int(S.rows.length)+' bills read'];
+  if(res.skipped)bits.push(res.skipped+' total/blank row'+(res.skipped>1?'s':'')+' ignored');
+  if(res.blankCenter)bits.push(res.blankCenter+' without collection center (shown as Unassigned)');
+  if(res.blankTests)bits.push(res.blankTests+' without tests');
+  $('fileMeta').textContent=bits.join(' · ');
+  $('dupWrap').hidden=!S.dupCount;$('dupText').textContent='Ignore '+S.dupCount+' exact duplicate row'+(S.dupCount>1?'s':'');
+  $('fPid').disabled=!S.hasPid;$('fPid').placeholder=S.hasPid?'Search ID':'No ID column in file';
+  busy(false);
+  say('ok',(S.sample?'Sample data loaded: ':'Upload complete: ')+int(S.rows.length)+' bills processed from '+name+'.'+(S.dupCount?' '+S.dupCount+' exact duplicate row'+(S.dupCount>1?'s were':' was')+' found and kept; use the checkbox to ignore them.':''));
+  renderAll();
+}
+
+/* ---------- sample data (synthetic) ---------- */
+function loadSample(){
+  let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const centers=['MAIN BRANCH','NORTH POINT','RIVER ROAD','CITY CENTRE'];
+  const first=['Asha','Ravi','Meena','Kiran','Sunil','Pooja','Anil','Neha','Vikas','Rekha','Imran','Deepa'];
+  const last=['Verma','Patel','Singh','Kumar','Sharma','Yadav','Khan','Joshi'];
+  const tests=[['Complete Blood Count (CBC)',120],['CBC MP WIDAL',300],['URINE ROUTINE',60],['Malaria Parasite, WIDAL Test',180],['Random Blood Sugar Test',50],['Thyroid Function Test (TFT)',350],['CBC WIDAL PS. FOR MALARIYA PARASITE',250],['LIPID PROFILE, HbA1c / Glycosylated',600]];
+  const rows=[];
+  for(let i=0;i<60;i++){
+    const t=tests[Math.floor(rnd()*tests.length)];const c=centers[Math.floor(rnd()*(rnd()<.55?1:centers.length))];
+    const day=1+Math.floor(rnd()*6);const amt=t[1];const disc=rnd()<.1?10:0;const net=amt-disc;
+    const paid=rnd()<.7?net:Math.floor(net/2);const upi=rnd()<.25?paid:0;
+    const o={idx:i,date:'2026-10-'+p2(day),patient:(first[Math.floor(rnd()*first.length)]+' '+last[Math.floor(rnd()*last.length)]).toUpperCase(),pid:'',tests:t[0],doctor:'SELF',amount:amt,discount:disc,net,paid,due:net-paid,cash:paid-upi,upi,card:0,wallet:0,other:0,center:c};
+    o.testsN=countTests(o.tests);o.cbc=isCBC(o.tests)?1:0;o.non=o.cbc?0:1;o.isDup=false;rows.push(o);
+  }
+  S.rows=rows;S.file='Sample billing data';S.sample=true;S.dupCount=0;S.hasPid=false;
+  afterLoad({skipped:0,blankCenter:0,blankTests:0},'Sample billing data');
+}
+
+/* ---------- filtering and aggregation ---------- */
+function filtered(){
+  const f=S.f,nm=f.name.toLowerCase(),pid=f.pid.toLowerCase();
+  return S.rows.filter(o=>{
+    if(S.dupIgnore&&o.isDup)return false;
+    if((f.from||f.to)&&!o.date)return false;
+    if(f.from&&o.date<f.from)return false;
+    if(f.to&&o.date>f.to)return false;
+    if(f.center&&o.center!==f.center)return false;
+    if(nm&&!o.patient.toLowerCase().includes(nm))return false;
+    if(pid&&!o.pid.toLowerCase().includes(pid))return false;
+    if(f.cbc!==''&&String(o.cbc)!==f.cbc)return false;
+    return true;
+  });
+}
+const FIELDS=['amount','discount','net','paid','due','cash','upi','card','wallet','other','cbc','non','testsN'];
+const zero=()=>{const z={bills:0};FIELDS.forEach(k=>z[k]=0);return z;};
+function add(z,o){z.bills++;FIELDS.forEach(k=>z[k]+=o[k]);}
+function summarize(rows){
+  const m=new Map(),tot=zero();
+  rows.forEach(o=>{if(!m.has(o.center))m.set(o.center,Object.assign(zero(),{center:o.center}));add(m.get(o.center),o);add(tot,o);});
+  return {list:[...m.values()].sort((a,b)=>b.amount-a.amount||a.center.localeCompare(b.center)),tot};
+}
+
+/* ---------- render ---------- */
+let CUR=null;
+function renderAll(){
+  const rows=filtered(),sm=summarize(rows);CUR={rows,sm};
+  renderKpis(sm);renderCbc(sm);renderSummary(sm);renderDetail(rows);renderCharts(sm);
+}
+const ic=n=>'<svg class="i"><use href="#i-'+n+'"/></svg>';
+function renderKpis(sm){
+  const t=sm.tot;
+  const k=[['bldg','Total Collection Centers',int(sm.list.length),''],['bill','Total Bills',int(t.bills),''],['flask','Total Tests',int(t.testsN),''],
+   ['rs','Total Revenue',inr(t.amount),''],['ok','Total Paid',inr(t.paid),'paid'],['clock','Total Due',inr(t.due),'due'],
+   ['drop','Total CBC',int(t.cbc),'cbc'],['dropx','Total NON CBC',int(t.non),'cbc']];
+  $('kpis').innerHTML=k.map(x=>'<div class="kpi '+x[3]+'"><div class="l">'+ic(x[0])+esc(x[1])+'</div><div class="v num">'+x[2]+'</div></div>').join('');
+}
+function renderCbc(sm){
+  const t=sm.tot,pc=t.bills?Math.round(t.cbc/t.bills*100):0;
+  $('bigC').textContent=int(t.cbc);$('bigN').textContent=int(t.non);
+  $('bigCs').textContent=t.bills?pc+'% of bills':'No bills';$('bigNs').textContent=t.bills?(100-pc)+'% of bills':'No bills';
+  const ok=t.cbc+t.non===t.bills;
+  $('eq').innerHTML='<span class="num">'+int(t.cbc)+' CBC + '+int(t.non)+' NON CBC = '+int(t.cbc+t.non)+'</span> <span>bills in view</span> <span class="'+(ok?'pill-ok':'pill-bad')+'">'+(ok?'Matches total bills':'Mismatch')+'</span>';
+}
+const MONEY=['amount','discount','net','paid','due','cash','upi','card','wallet','other'];
+function renderSummary(sm){
+  const cols=[['center','Collection Center'],['bills','Bills'],['testsN','Tests'],['amount','Revenue'],['discount','Discount'],['net','Net'],['paid','Paid'],['due','Due'],['cash','Cash'],['upi','UPI'],['card','Card'],['wallet','Wallet'],['other','Other'],['cbc','CBC'],['non','NON CBC']];
+  if(!sm.list.length){$('tSum').innerHTML='<tbody><tr><td><div class="empty-state">No records match the current filters.</div></td></tr></tbody>';return;}
+  const cell=(k,r)=>{if(k==='center')return '<td><b>'+esc(r.center)+'</b></td>';
+    const v=r[k];const m=MONEY.includes(k);return '<td class="r num'+(v===0&&m?' zero':'')+'">'+(m?(v===0?'–':inr(v)):int(v))+'</td>';};
+  const head='<thead><tr>'+cols.map(c=>'<th class="'+(c[0]==='center'?'':'r')+'">'+c[1]+'</th>').join('')+'</tr></thead>';
+  const body='<tbody>'+sm.list.map(r=>'<tr class="clickable'+(S.f.center===r.center?' sel':'')+'" data-c="'+esc(r.center)+'" tabindex="0">'+cols.map(c=>cell(c[0],r)).join('')+'</tr>').join('')+'</tbody>';
+  const t=sm.tot;
+  const foot='<tfoot><tr>'+cols.map(c=>c[0]==='center'?'<th>TOTAL</th>':'<td class="r num">'+(MONEY.includes(c[0])?inr(t[c[0]]):int(t[c[0]]))+'</td>').join('')+'</tr></tfoot>';
+  $('tSum').innerHTML=head+body+foot;
+}
+const DCOLS=[['date','Bill Date',1,0],['patient','Patient Info',0,0],['tests','Tests/Packages',0,0],['doctor','Referral Doctor',0,0],['amount','Amount',1,1],['discount','Discount',0,1],['paid','Paid',0,1],['due','Due',1,1],['net','Net Amount',1,1],['cash','Cash',0,1],['upi','UPI',0,1],['card','Card',0,1],['wallet','Wallet',0,1],['other','Other',0,1],['center','Collection Center',1,0],['cbc','CBC',1,1],['non','NON CBC',1,1]];
+function sorted(rows){
+  const {key,dir}=S.sort;
+  return rows.slice().sort((a,b)=>{let x=a[key],y=b[key];
+    if(typeof x==='string')x=x.toLowerCase();if(typeof y==='string')y=y.toLowerCase();
+    return (x<y?-1:x>y?1:0)*dir||a.idx-b.idx;});
+}
+function renderDetail(rows){
+  $('detInfo').textContent=int(rows.length)+' bill'+(rows.length===1?'':'s')+' in view';
+  if(!rows.length){$('tDet').innerHTML='<tbody><tr><td><div class="empty-state">No records match the current filters. Adjust the dates, center or search.</div></td></tr></tbody>';$('more').hidden=true;return;}
+  const arrow=k=>S.sort.key===k?(S.sort.dir>0?'▲':'▼'):'';
+  const head='<thead><tr>'+DCOLS.map(c=>'<th class="'+(c[2]?'sort ':'')+(c[3]?'r':'')+'"'+(c[2]?' data-s="'+c[0]+'" tabindex="0" aria-sort="'+(S.sort.key===c[0]?(S.sort.dir>0?'ascending':'descending'):'none')+'"':'')+'>'+c[1]+(c[2]?' <span class="ar">'+arrow(c[0])+'</span>':'')+'</th>').join('')+'</tr></thead>';
+  const srt=sorted(rows),show=srt.slice(0,S.shown);
+  const mc=v=>'<td class="r num'+(v===0?' zero':'')+'">'+(v===0?'–':inr(v))+'</td>';
+  const ind=(v,cls)=>'<td class="r"><span class="ind '+(v?'on '+cls:'off')+'">'+v+'</span></td>';
+  const body='<tbody>'+show.map(o=>'<tr><td class="num">'+showDate(o.date)+'</td><td class="pat">'+esc(o.patient||'—')+(o.pid?'<small>'+esc(o.pid)+'</small>':'')+'</td><td class="tests">'+esc(o.tests||'—')+'</td><td>'+esc(o.doctor||'—')+'</td>'
+    +mc(o.amount)+mc(o.discount)+mc(o.paid)+mc(o.due)+mc(o.net)+mc(o.cash)+mc(o.upi)+mc(o.card)+mc(o.wallet)+mc(o.other)
+    +'<td>'+esc(o.center)+'</td>'+ind(o.cbc,'c')+ind(o.non,'n')+'</tr>').join('')+'</tbody>';
+  const t=CUR.sm.tot;
+  const f=(k)=>'<td class="r num">'+inr(t[k])+'</td>';
+  const foot='<tfoot><tr><th>TOTAL</th><td>'+int(t.bills)+' bills</td><td>'+int(t.testsN)+' tests</td><td></td>'+f('amount')+f('discount')+f('paid')+f('due')+f('net')+f('cash')+f('upi')+f('card')+f('wallet')+f('other')+'<td></td><td class="r num">'+int(t.cbc)+'</td><td class="r num">'+int(t.non)+'</td></tr></tfoot>';
+  $('tDet').innerHTML=head+body+foot;
+  const left=srt.length-show.length;$('more').hidden=left<=0;$('btnMore').textContent='Show more rows ('+int(left)+' remaining)';
+}
+
+/* ---------- charts ---------- */
+const charts={};
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const theme=()=>({fg:cssv('--fg'),muted:cssv('--muted'),line:cssv('--line'),c1:cssv('--c1'),c2:cssv('--c2'),c3:cssv('--c3'),c4:cssv('--c4'),font:cssv('--font')});
+function drop(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+const valuePlugin={id:'vl',afterDatasetsDraw(ch){
+  const ds=ch.data.datasets[0],o=ds&&ds.vl;if(!o)return;const ctx=ch.ctx;
+  ch.getDatasetMeta(0).data.forEach((b,i)=>{ctx.save();ctx.fillStyle=o.color;ctx.font='600 11px '+o.font;ctx.textBaseline='middle';ctx.fillText(o.fmt(ds.data[i]),b.x+6,b.y);ctx.restore();});}};
+function hbar(id,wrap,list,key,color,fmt,T){
+  drop(id);const w=$(wrap);let none=w.querySelector('.none');
+  if(!list.length){if(!none){none=document.createElement('div');none.className='none';none.textContent='No records';w.appendChild(none);}
+    w.style.height='120px';w.querySelector('canvas').style.visibility='hidden';return;}
+  if(none)none.remove();w.querySelector('canvas').style.visibility='';
+  w.style.height=Math.max(150,list.length*34+44)+'px';
+  charts[id]=new Chart($(id),{type:'bar',plugins:[valuePlugin],data:{labels:list.map(r=>r.center),datasets:[{data:list.map(r=>r[key]),backgroundColor:color,borderRadius:4,maxBarThickness:22,vl:{fmt,color:T.fg,font:T.font}}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.x)}}},
+      scales:{x:{beginAtZero:true,grace:'18%',ticks:{color:T.muted,callback:v=>fmt(v),maxTicksLimit:5},grid:{color:T.line}},y:{ticks:{color:T.fg},grid:{display:false}}}}});
+}
+function donut(id,labels,data,colors,T,fmt){
+  drop(id);const empty=data.every(v=>!v);
+  charts[id]=new Chart($(id),{type:'doughnut',data:{labels:labels.map((l,i)=>l+' ('+fmt(data[i])+')'),datasets:[{data:empty?[1]:data,backgroundColor:empty?[T.line]:colors,borderColor:cssv('--surface'),borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:T.fg,font:{family:T.font,size:12},boxWidth:12}},tooltip:{enabled:!empty}}}});
+}
+function renderCharts(sm){
+  if(typeof Chart==='undefined')return;
+  const T=theme(),L=sm.list,t=sm.tot;
+  hbar('ch1','w1',L,'amount',T.c1,inr,T);
+  hbar('ch2','w2',L,'bills',T.c2,int,T);
+  hbar('ch4','w4',L.filter(r=>true),'cbc',T.c2,int,T);
+  hbar('ch5','w5',L.filter(r=>true),'non',T.c1,int,T);
+  donut('chDonut',['CBC','NON CBC'],[t.cbc,t.non],[T.c2,T.c1],T,int);
+  donut('ch3',['Paid','Due'],[t.paid,t.due],[T.c1,T.c3],T,inr);
+}
+
+/* ---------- filters UI ---------- */
+function fillCenters(){
+  const cs=[...new Set(S.rows.map(o=>o.center))].sort((a,b)=>a.localeCompare(b));
+  $('fCenter').innerHTML='<option value="">All Collection Centers</option>'+cs.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
+  $('fCenter').value=S.f.center;
+}
+function resetFilters(silent){
+  S.f={from:'',to:'',center:'',name:'',pid:'',cbc:''};
+  ['fFrom','fTo','fName','fPid'].forEach(i=>$(i).value='');$('fCbc').value='';$('fCenter').value='';
+  S.shown=200;if(!silent)renderAll();
+}
+let tm;const later=fn=>{clearTimeout(tm);tm=setTimeout(fn,120);};
+$('fFrom').oninput=e=>{S.f.from=e.target.value;S.shown=200;renderAll();};
+$('fTo').oninput=e=>{S.f.to=e.target.value;S.shown=200;renderAll();};
+$('fCenter').onchange=e=>{S.f.center=e.target.value;S.shown=200;renderAll();};
+$('fCbc').onchange=e=>{S.f.cbc=e.target.value;S.shown=200;renderAll();};
+$('fName').oninput=e=>{S.f.name=e.target.value.trim();S.shown=200;later(renderAll);};
+$('fPid').oninput=e=>{S.f.pid=e.target.value.trim();S.shown=200;later(renderAll);};
+$('btnReset').onclick=()=>resetFilters(false);
+$('dupIgnore').onchange=e=>{S.dupIgnore=e.target.checked;renderAll();};
+$('btnMore').onclick=()=>{S.shown+=500;renderDetail(CUR.rows);};
+function pickCenter(tr){if(!tr)return;const c=tr.dataset.c;S.f.center=S.f.center===c?'':c;$('fCenter').value=S.f.center;S.shown=200;renderAll();}
+$('tSum').addEventListener('click',e=>pickCenter(e.target.closest('tr.clickable')));
+$('tSum').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pickCenter(e.target.closest('tr.clickable'));}});
+function sortBy(th){if(!th||!th.dataset.s)return;const k=th.dataset.s;
+  if(S.sort.key===k)S.sort.dir*=-1;else{S.sort.key=k;S.sort.dir=(k==='center')?1:-1;}renderDetail(CUR.rows);}
+$('tDet').addEventListener('click',e=>sortBy(e.target.closest('th.sort')));
+$('tDet').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sortBy(e.target.closest('th.sort'));}});
+
+/* ---------- upload UI ---------- */
+const fileIn=$('file');
+['btnUpload','btnUpload2'].forEach(i=>$(i).onclick=()=>fileIn.click());
+$('btnSample').onclick=loadSample;
+fileIn.onchange=()=>{const f=fileIn.files[0];fileIn.value='';loadFile(f);};
+const up=$('upload');
+['dragenter','dragover'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();up.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();if(ev==='drop'||e.target===document.documentElement||!e.relatedTarget)up.classList.remove('drag');}));
+document.addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files[0];if(f)loadFile(f);});
+
+/* ---------- export ---------- */
+const sanitize=s=>String(s).replace(/[^A-Za-z0-9_+.-]+/g,'_').replace(/^_+|_+$/g,'');
+function filterText(){
+  const f=S.f,a=[];
+  a.push('Date: '+(f.from||f.to?(f.from?showDate(f.from):'start')+' to '+(f.to?showDate(f.to):'end'):'All dates'));
+  a.push('Collection Center: '+(f.center||'All Collection Centers'));
+  if(f.name)a.push('Patient: '+f.name);if(f.pid)a.push('Patient ID: '+f.pid);
+  a.push('CBC filter: '+(f.cbc===''?'All':f.cbc==='1'?'CBC only':'NON CBC only'));
+  if(S.dupIgnore)a.push('Duplicates ignored');
+  return a.join('  |  ');
+}
+function baseName(kind){
+  const f=S.f;return 'NNLABS_'+kind+'_'+sanitize(f.center||'All_Centers')+(f.from||f.to?'_'+(f.from||'start')+'_to_'+(f.to||'end'):'');
+}
+const SUMH=['Collection Center','Bills','Tests','Revenue','Discount','Net Amount','Paid','Due','Cash','UPI','Card','Wallet','Other','CBC','NON CBC'];
+const SUMK=['center','bills','testsN','amount','discount','net','paid','due','cash','upi','card','wallet','other','cbc','non'];
+function sumTable(){const sm=CUR.sm;
+  return {head:SUMH,body:sm.list.map(r=>SUMK.map(k=>r[k])),foot:['TOTAL'].concat(SUMK.slice(1).map(k=>sm.tot[k]))};}
+const DETH=['Bill Date','Patient Name','Patient ID / UHID','Tests/Packages','Referral Doctor','Amount','Discount','Paid','Due','Net Amount','Cash','UPI','Card','Wallet','Other','Collection Center','CBC','NON CBC'];
+function detTable(){const t=CUR.sm.tot;
+  const body=sorted(CUR.rows).map(o=>[showDate(o.date),o.patient,o.pid,o.tests,o.doctor,o.amount,o.discount,o.paid,o.due,o.net,o.cash,o.upi,o.card,o.wallet,o.other,o.center,o.cbc,o.non]);
+  return {head:DETH,body,foot:['TOTAL',t.bills+' bills','',t.testsN+' tests','',t.amount,t.discount,t.paid,t.due,t.net,t.cash,t.upi,t.card,t.wallet,t.other,'',t.cbc,t.non]};}
+const csvCell=v=>{const s=String(v??'');return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+const toCSV=(tb)=>'﻿'+[tb.head].concat(tb.body,[tb.foot]).map(r=>r.map(csvCell).join(',')).join('\r\n');
+
+async function saveFile(filename,data){
+  let dl=null;try{if(window.claude&&claude.use)dl=await claude.use('downloads');}catch(e){}
+  if(dl){
+    try{await dl.save({filename,data});say('ok','Export ready: '+filename);}
+    catch(e){if(e&&e.code==='declined')return;say('err','The file could not be saved ('+(e&&e.code?e.code:'error')+').');}
+    return;
+  }
+  // fallback for plain browsers
+  try{const blob=data instanceof Blob?data:new Blob([data]);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();a.remove();say('ok','Export ready: '+filename);}
+  catch(e){say('err','Downloads are not available in this view.');}
+}
+function exportCSV(kind){
+  const tb=kind==='sum'?sumTable():detTable();
+  saveFile(baseName(kind==='sum'?'CenterSummary':'Billing')+'.csv',toCSV(tb));
+}
+function exportXLSX(kind){
+  const wb=XLSX.utils.book_new();
+  const sheet=(tb,name,widths)=>{const aoa=[tb.head].concat(tb.body,[tb.foot]);const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=widths.map(w=>({wch:w}));ws['!freeze']={xSplit:0,ySplit:1};XLSX.utils.book_append_sheet(wb,ws,name);};
+  const info=XLSX.utils.aoa_to_sheet([['NN LABS - Collection Center Wise Report'],[filterText()],['Generated',new Date().toLocaleString('en-IN')]]);
+  info['!cols']=[{wch:24},{wch:90}];
+  if(kind==='sum'){sheet(sumTable(),'Center Summary',[22,8,8,12,10,12,12,12,12,10,8,8,8,8,10]);}
+  else{sheet(detTable(),'Billing Detail',[11,24,14,48,22,10,10,10,10,11,10,10,8,8,8,18,6,9]);sheet(sumTable(),'Center Summary',[22,8,8,12,10,12,12,12,12,10,8,8,8,8,10]);}
+  XLSX.utils.book_append_sheet(wb,info,'Filters');
+  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  saveFile(baseName(kind==='sum'?'CenterSummary':'Billing')+'.xlsx',new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+}
+function exportPDF(kind){
+  const J=window.jspdf&&window.jspdf.jsPDF;if(!J){say('err','The PDF library did not load. Check the connection and reload.');return;}
+  const doc=new J({orientation:'landscape',unit:'pt',format:'a4'});
+  const fmt=v=>typeof v==='number'?plain(v):v;
+  doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('NN LABS - Collection Center Wise '+(kind==='sum'?'Summary':'Report'),30,34);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(90);
+  doc.text(doc.splitTextToSize(filterText()+'   |   Amounts in INR',780),30,48);
+  const common={theme:'grid',styles:{fontSize:7,cellPadding:3,overflow:'linebreak'},headStyles:{fillColor:[14,124,134],textColor:255},footStyles:{fillColor:[221,241,242],textColor:20,fontStyle:'bold'},showFoot:'lastPage',margin:{left:30,right:30}};
+  const sm=sumTable();
+  const numCols=idx=>Object.fromEntries(idx.map(i=>[i,{halign:'right'}]));
+  doc.autoTable(Object.assign({},common,{startY:66,head:[sm.head],body:sm.body.map(r=>r.map(fmt)),foot:[sm.foot.map(fmt)],columnStyles:numCols([1,2,3,4,5,6,7,8,9,10,11,12,13,14])}));
+  if(kind!=='sum'){
+    const dt=detTable();
+    doc.addPage();
+    doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(20);doc.text('Detailed patient data',30,34);
+    doc.autoTable(Object.assign({},common,{startY:44,styles:{fontSize:6,cellPadding:2,overflow:'linebreak'},head:[dt.head],body:dt.body.map(r=>r.map(fmt)),foot:[dt.foot.map(fmt)],
+      columnStyles:Object.assign(numCols([5,6,7,8,9,10,11,12,13,14,16,17]),{3:{cellWidth:120},1:{cellWidth:62}})}));
+  }
+  const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(7);doc.setTextColor(120);doc.text('Page '+i+' of '+n,780,570);}
+  saveFile(baseName(kind==='sum'?'CenterSummary':'Billing')+'.pdf',doc.output('arraybuffer'));
+}
+const EXPORTS={xlsx:exportXLSX,csv:exportCSV,pdf:exportPDF};
+function buildMenu(id,kind){
+  const m=$(id),btn=m.querySelector('[data-menu]');
+  const list=document.createElement('div');list.className='menu-list';list.hidden=true;list.setAttribute('role','menu');
+  [['xlsx','Excel (.xlsx)'],['csv','CSV (.csv)'],['pdf','PDF (.pdf)']].forEach(([f,l])=>{
+    const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('role','menuitem');
+    b.onclick=()=>{list.hidden=true;btn.setAttribute('aria-expanded','false');
+      if(!CUR||!CUR.rows.length){say('info','There are no records in the current view to export. Adjust the filters first.');return;}
+      try{EXPORTS[f](kind);}catch(e){say('err','Export failed: '+(e&&e.message?e.message:'unknown error'));}};
+    list.appendChild(b);});
+  m.appendChild(list);
+  btn.onclick=e=>{e.stopPropagation();const open=list.hidden;document.querySelectorAll('.menu-list').forEach(x=>x.hidden=true);list.hidden=!open;btn.setAttribute('aria-expanded',String(open));};
+}
+buildMenu('mFull','full');buildMenu('mSum','sum');
+document.addEventListener('click',()=>document.querySelectorAll('.menu-list').forEach(x=>x.hidden=true));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.menu-list').forEach(x=>x.hidden=true);});
+
+/* re-colour charts when the theme changes */
+const redraw=()=>{if(CUR)renderCharts(CUR.sm);};
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);}catch(e){}
+new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* test hook (harmless in production) */
+window.__nn={S,loadFile,filtered,summarize,countTests,isCBC};
+})();
+</script>
+
+</body>
+</html>
